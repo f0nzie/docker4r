@@ -6,7 +6,7 @@
 # Push to gh-pages: no
 #
 # bookdown
-PUBLISH_DIR = ./public
+PUBLISH_DIR = public
 ifeq ($(OS), Windows_NT)
     OSFLAG = WINDOWS
 else
@@ -33,4 +33,12 @@ endif
 ifeq ($(OSFLAG), WINDOWS)
 	@"C:\Program Files\Mozilla Firefox\firefox" $(PUBLISH_DIR)/index.html
 endif
+
+
+
+# push main branch and github-pages
+git_push:
+	git push ;\
+	git subtree push --prefix ${PUBLISH_DIR} origin gh-pages
+
 
