@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Chapter 7 Install packages from source | Minimal book Docker for R</title>
+<meta name="author" content="Yihui Xie">
+<!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.2"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/header-attrs-2.5.3/header-attrs.js"></script><script src="libs/jquery-3.5.1/jquery-3.5.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="libs/bootstrap-4.5.3/bootstrap.min.css" rel="stylesheet">
+<script src="libs/bootstrap-4.5.3/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.2.2.9000/tabs.js"></script><script src="libs/bs3compat-0.2.2.9000/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
+<script src="libs/bs4_book-1.0.0/bs4_book.js"></script><script src="https://cdn.jsdelivr.net/autocomplete.js/0/autocomplete.jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script><!-- CSS -->
+</head>
+<body data-spy="scroll" data-target="#toc">
+
+<div class="container-fluid">
+<div class="row">
+  <header class="col-sm-12 col-lg-3 sidebar sidebar-book"><a class="sr-only sr-only-focusable" href="#content">Skip to main content</a>
+
+    <div class="d-flex align-items-start justify-content-between">
+      <h1>
+        <a href="index.html" title="">Minimal book Docker for R</a>
+      </h1>
+      <button class="btn btn-outline-primary d-lg-none ml-2 mt-1" type="button" data-toggle="collapse" data-target="#main-nav" aria-expanded="true" aria-controls="main-nav"><i class="fas fa-bars"></i><span class="sr-only">Show table of contents</span></button>
+    </div>
+
+    <div id="main-nav" class="collapse-lg">
+      <form role="search">
+        <input id="search" class="form-control" type="search" placeholder="Search" aria-label="Search">
+</form>
+
+      <nav aria-label="Table of contents"><h2>Table of contents</h2>
+        <ul class="book-toc list-unstyled">
+<li><a class="" href="index.html"><span class="header-section-number">1</span> Preface</a></li>
+<li><a class="" href="intro.html"><span class="header-section-number">2</span> Introduction</a></li>
+<li><a class="" href="copying-files-and-folders.html"><span class="header-section-number">3</span> Copying files and folders</a></li>
+<li><a class="" href="using-arguments-and-variables.html"><span class="header-section-number">4</span> Using arguments and variables</a></li>
+<li><a class="" href="using-rscript-and-littler.html"><span class="header-section-number">5</span> Using Rscript and littler</a></li>
+<li><a class="" href="building-a-book-as-a-package.html"><span class="header-section-number">6</span> Building a book as a package</a></li>
+<li><a class="active" href="install-packages-from-source.html"><span class="header-section-number">7</span> Install packages from source</a></li>
+<li><a class="" href="copy-container-content-to-the-host.html"><span class="header-section-number">8</span> Copy container content to the host</a></li>
+<li><a class="" href="installing-packages-at-specific-dates.html"><span class="header-section-number">9</span> Installing packages at specific dates</a></li>
+<li><a class="" href="dockerfile-and-makefile.html"><span class="header-section-number">10</span> Dockerfile and Makefile</a></li>
+<li><a class="" href="editing-tips.html"><span class="header-section-number">11</span> Editing tips</a></li>
+<li><a class="" href="references.html">References</a></li>
+</ul>
+
+        <div class="book-extra">
+          <p><a id="book-repo" href="https://github.com/f0nzie/">View book source <i class="fab fa-github"></i></a></p>
+        </div>
+      </nav>
+</div>
+  </header><main class="col-sm-12 col-md-9 col-lg-7" id="content"><div id="install-packages-from-source" class="section level1" number="7">
+<h1>
+<span class="header-section-number">7</span> Install packages from source<a class="anchor" aria-label="anchor" href="#install-packages-from-source"><i class="fas fa-link"></i></a>
+</h1>
+<p>We occasionally need to copy package sources that are not available anymore, or freeze packages in time to reproduce a document; or eliminate potential conflicts between packages.</p>
+<p><strong>Example</strong>: This first block copies the packages as source files:</p>
+<pre><code># copy package sources
+COPY pkg/extracat /home/rstudio/pkg/extracat
+COPY pkg/ggthemr /home/rstudio/pkg/ggthemr
+COPY pkg/statebins /home/rstudio/pkg/statebins</code></pre>
+<p>And this next block proceeds to install the packages:</p>
+<pre><code># install from package sources
+RUN Rscript -e "install.packages(c(\
+  '/home/rstudio/pkg/extracat', \
+  '/home/rstudio/pkg/ggthemr', \
+  '/home/rstudio/pkg/statebins' \
+  ), repos = NULL, type='source')"</code></pre>
+<p>We use the function <code><a href="https://rdrr.io/r/utils/install.packages.html">install.packages()</a></code>, indicating <code>type='source'</code>.</p>
+<div id="install-system-packages" class="section level2" number="7.1">
+<h2>
+<span class="header-section-number">7.1</span> Install system packages<a class="anchor" aria-label="anchor" href="#install-system-packages"><i class="fas fa-link"></i></a>
+</h2>
+<p>The Linux package <code>QuantLib</code> is relatively hard to install using <code>apt install</code>. If that method doesn’t work, we could install it from source.</p>
+<p><strong>Example</strong>: This script will download the <code>QuantLib</code> Linux package source, unpack it, change to the source folder, then check the configuration, and install it with <code>make</code>.</p>
+<pre><code>WORKDIR /home/shiny
+RUN wget https://github.com/lballabio/QuantLib/releases/download/QuantLib-v1.19/QuantLib-1.19.tar.gz &amp;&amp; \
+    tar xzf QuantLib-1.19.tar.gz &amp;&amp; \
+    cd QuantLib-1.19 
+    ./configure &amp;&amp; \
+    make</code></pre>
+
+</div>
+</div>
+  <div class="chapter-nav">
+<div class="prev"><a href="building-a-book-as-a-package.html"><span class="header-section-number">6</span> Building a book as a package</a></div>
+<div class="next"><a href="copy-container-content-to-the-host.html"><span class="header-section-number">8</span> Copy container content to the host</a></div>
+</div></main><div class="col-md-3 col-lg-2 d-none d-md-block sidebar sidebar-chapter">
+    <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
+      <ul class="nav navbar-nav">
+<li><a class="nav-link" href="#install-packages-from-source"><span class="header-section-number">7</span> Install packages from source</a></li>
+<li><a class="nav-link" href="#install-system-packages"><span class="header-section-number">7.1</span> Install system packages</a></li>
+</ul>
+
+      <div class="book-extra">
+        <ul class="list-unstyled">
+<li><a id="book-source" href="https://github.com/f0nzie//blob/master/12-install_packages_from_source.Rmd">View source <i class="fab fa-github"></i></a></li>
+          <li><a id="book-edit" href="https://github.com/f0nzie//edit/master/12-install_packages_from_source.Rmd">Edit this page <i class="fab fa-github"></i></a></li>
+        </ul>
+</div>
+    </nav>
+</div>
+
+</div>
+</div> <!-- .container -->
+
+<footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>"<strong>Minimal book Docker for R</strong>" was written by Yihui Xie. It was last built on 2020-11-20.</p>
+  </div>
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>This book was built by the <a class="text-light" href="https://bookdown.org">bookdown</a> R package.</p>
+  </div>
+
+</div></div>
+</footer>
+</body>
+</html>
