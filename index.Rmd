@@ -1,6 +1,6 @@
 ---
 title: Minimal book Docker for R
-author: Yihui Xie
+author: Alfonso R. Reyes
 date: '`r Sys.Date()`'
 site: bookdown::bookdown_site
 documentclass: book
@@ -9,8 +9,8 @@ bibliography:
 - packages.bib
 biblio-style: apalike
 link-citations: true
-description: This is a minimal example of using the bookdown package to write a book.
-  The output format for this example is bookdown::gitbook.
+description: This is a minimal example of using the bookdown package to write a book. The output format for this example is bookdown::gitbook.
+github-repo: /f0nzie/docker4r
 ---
 
 ```{r setup, include = FALSE}
