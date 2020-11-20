@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Chapter 8 Copy container content to the host | Minimal book Docker for R</title>
+<meta name="author" content="Yihui Xie">
+<!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.2"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/header-attrs-2.5.3/header-attrs.js"></script><script src="libs/jquery-3.5.1/jquery-3.5.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="libs/bootstrap-4.5.3/bootstrap.min.css" rel="stylesheet">
+<script src="libs/bootstrap-4.5.3/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.2.2.9000/tabs.js"></script><script src="libs/bs3compat-0.2.2.9000/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
+<script src="libs/bs4_book-1.0.0/bs4_book.js"></script><script src="https://cdn.jsdelivr.net/autocomplete.js/0/autocomplete.jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script><!-- CSS -->
+</head>
+<body data-spy="scroll" data-target="#toc">
+
+<div class="container-fluid">
+<div class="row">
+  <header class="col-sm-12 col-lg-3 sidebar sidebar-book"><a class="sr-only sr-only-focusable" href="#content">Skip to main content</a>
+
+    <div class="d-flex align-items-start justify-content-between">
+      <h1>
+        <a href="index.html" title="">Minimal book Docker for R</a>
+      </h1>
+      <button class="btn btn-outline-primary d-lg-none ml-2 mt-1" type="button" data-toggle="collapse" data-target="#main-nav" aria-expanded="true" aria-controls="main-nav"><i class="fas fa-bars"></i><span class="sr-only">Show table of contents</span></button>
+    </div>
+
+    <div id="main-nav" class="collapse-lg">
+      <form role="search">
+        <input id="search" class="form-control" type="search" placeholder="Search" aria-label="Search">
+</form>
+
+      <nav aria-label="Table of contents"><h2>Table of contents</h2>
+        <ul class="book-toc list-unstyled">
+<li><a class="" href="index.html"><span class="header-section-number">1</span> Preface</a></li>
+<li><a class="" href="intro.html"><span class="header-section-number">2</span> Introduction</a></li>
+<li><a class="" href="copying-files-and-folders.html"><span class="header-section-number">3</span> Copying files and folders</a></li>
+<li><a class="" href="using-arguments-and-variables.html"><span class="header-section-number">4</span> Using arguments and variables</a></li>
+<li><a class="" href="using-rscript-and-littler.html"><span class="header-section-number">5</span> Using Rscript and littler</a></li>
+<li><a class="" href="building-a-book-as-a-package.html"><span class="header-section-number">6</span> Building a book as a package</a></li>
+<li><a class="" href="install-packages-from-source.html"><span class="header-section-number">7</span> Install packages from source</a></li>
+<li><a class="active" href="copy-container-content-to-the-host.html"><span class="header-section-number">8</span> Copy container content to the host</a></li>
+<li><a class="" href="installing-packages-at-specific-dates.html"><span class="header-section-number">9</span> Installing packages at specific dates</a></li>
+<li><a class="" href="dockerfile-and-makefile.html"><span class="header-section-number">10</span> Dockerfile and Makefile</a></li>
+<li><a class="" href="editing-tips.html"><span class="header-section-number">11</span> Editing tips</a></li>
+<li><a class="" href="references.html">References</a></li>
+</ul>
+
+        <div class="book-extra">
+          <p><a id="book-repo" href="https://github.com/f0nzie/">View book source <i class="fab fa-github"></i></a></p>
+        </div>
+      </nav>
+</div>
+  </header><main class="col-sm-12 col-md-9 col-lg-7" id="content"><div id="copy-container-content-to-the-host" class="section level1" number="8">
+<h1>
+<span class="header-section-number">8</span> Copy container content to the host<a class="anchor" aria-label="anchor" href="#copy-container-content-to-the-host"><i class="fas fa-link"></i></a>
+</h1>
+<p>We use this technique to copy a folder or files from a container without an explicit copy operation, or the need of spin up a container from an image.</p>
+<p>What we do is using an obscure development feature in Docker called <code>BuildKit</code>. This allows us to copy a set of files directly when we are building the image. The image from which the files are extracted has to be created in stages; one of the images will contain the files to copy to the host.</p>
+<div id="building-the-image-from-a-dockerfile" class="section level2" number="8.1">
+<h2>
+<span class="header-section-number">8.1</span> Building the image from a Dockerfile<a class="anchor" aria-label="anchor" href="#building-the-image-from-a-dockerfile"><i class="fas fa-link"></i></a>
+</h2>
+<p>We have this example from a Dockerfile that is used to copy files from a stage image called <code>artifact</code> to a folder in the host that we call <code>artifacts.</code> The names are similar to mean a certian connection between the target image and the output folder in the host.</p>
+<pre><code># Dockerfile rule
+phony: artifact
+artifact:
+    DOCKER_BUILDKIT=1 docker build --target artifact --output type=local,dest=./artifacts .</code></pre>
+</div>
+<div id="steps-to-build-the-image-in-stages" class="section level2" number="8.2">
+<h2>
+<span class="header-section-number">8.2</span> Steps to build the image in stages<a class="anchor" aria-label="anchor" href="#steps-to-build-the-image-in-stages"><i class="fas fa-link"></i></a>
+</h2>
+<p>In the following <code>Dockerfile</code> we see the creation of stages. We need these stages to place the files we need to copy later to the host. The trick consists of copying the set of files from a stage image -where the files have already been generated- to a destination image, which will contain these files.</p>
+<p>The key lines in the script are:</p>
+<pre><code>FROM scratch as release
+COPY --from=bookdown /home/rstudio/book/_book_final /public
+FROM scratch as artifact
+COPY --from=bookdown /home/rstudio/book/_book_final /public
+FROM release</code></pre>
+</div>
+<div id="the-dockerfile" class="section level2" number="8.3">
+<h2>
+<span class="header-section-number">8.3</span> The Dockerfile<a class="anchor" aria-label="anchor" href="#the-dockerfile"><i class="fas fa-link"></i></a>
+</h2>
+<p>The following is the Dockerfile script that builds the intermediate images and the final image <code>artifact</code>, from which we will extract the files. To prevent copying a large amount of files from the images we are building, we finish the script with the <code>release</code> image, which would contain another copy of the selected files, and nothing more.</p>
+<pre><code># BUILD_DATE for R-3.6.3 is 2020-04-24
+# BUILD_DATE for R-3.5.3 is 2019-04-26
+# FROM rocker/rstudio:3.5.3
+
+# -----------------------------------------------------------------------------
+FROM rocker/rstudio:3.6.3 as linux
+# FROM rocker/verse:3.6.3
+
+RUN apt-get -y update \
+ &amp;&amp; apt-get -y install  \
+    libxml2-dev \
+    libz-dev
+
+# Linux: pre-requisites gor GDAL, rgdal, rgeos and units
+# Linux: pre-requisites for magick
+RUN apt-get install -y \
+    libudunits2-dev \
+    libgdal20 \
+    libgdal-dev \
+    libgeos-dev \ 
+    libproj-dev \
+    libmagick++-dev \
+    cargo                # required by gifski
+
+# -----------------------------------------------------------------------------
+FROM linux as rstats
+# Install R packages
+RUN install2.r --error --repo https://mran.microsoft.com/snapshot/2019-06-12 \
+    bookdown \
+    egg \
+    forcats \
+    foreign \
+    gapminder \
+    ggrepel \
+    ggridges \
+    ggthemes \
+    ggforce \
+    gridGraphics \
+    ggplot2movies \
+    gridExtra \
+    gtable \ 
+    hexbin \
+    lubridate \
+    magick \
+    maps \
+    maptools \
+    nlme \
+    nycflights13 \ 
+    plot3D \
+    rgdal \
+    rgeos \
+    readr \
+    sf \
+    treemapify \
+    tidyverse \
+    units
+
+# mvtnorm required by ungeviz
+# rstanarm required by dviz.supp
+# install statebins from source 
+RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-06-12 \  
+  emmeans \
+  ggmap \
+  geofacet \
+  ggspatial \
+  gganimate \
+  lwgeom \
+  mvtnorm \
+  rworldmap \
+  transformr
+
+RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-08-12 \  
+  rstanarm
+
+RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-12 \  
+  dplyr \
+  lobstr \
+  lifecycle \
+  patchwork \
+  tidybayes \
+  tidyr  
+
+# RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-12 \  
+#   patchwork \
+#   tidybayes  
+
+# RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-12 \  
+#   dplyr \
+#   tidyr
+
+# -----------------------------------------------------------------------------
+FROM rstats as offline
+RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-24 \  
+  gifski
+
+COPY pkg/colorspace /home/rstudio/pkg/colorspace
+COPY pkg/strapgod /home/rstudio/pkg/strapgod
+COPY pkg/ungeviz /home/rstudio/pkg/ungeviz
+COPY pkg/cowplot /home/rstudio/pkg/cowplot
+COPY pkg/colorblindr /home/rstudio/pkg/colorblindr
+COPY pkg/dviz.supp /home/rstudio/pkg/dviz.supp
+COPY pkg/ggtextures /home/rstudio/pkg/ggtextures
+COPY pkg/statebins /home/rstudio/pkg/statebins
+
+RUN Rscript -e "install.packages(c(\
+  '/home/rstudio/pkg/colorspace', \
+  '/home/rstudio/pkg/strapgod', \
+  '/home/rstudio/pkg/ungeviz', \
+  '/home/rstudio/pkg/cowplot', \
+  '/home/rstudio/pkg/colorblindr', \
+  '/home/rstudio/pkg/dviz.supp', \
+  '/home/rstudio/pkg/ggtextures', \
+  '/home/rstudio/pkg/statebins' \
+  ), repos = NULL, type='source')"
+
+# RUN Rscript -e "install.packages(c(\
+# '/home/rstudio/pkg/ungeviz' \
+# ), repos = NULL, type='source')"
+
+# -----------------------------------------------------------------------------
+FROM offline as bookdown
+COPY dataviz-2020 /home/rstudio/book
+RUN chmod a+rwx -R /home/rstudio/book
+WORKDIR /home/rstudio/book
+# VOLUME write-fast         # creates a folder /write-fast
+
+# build book
+RUN Rscript -e "bookdown::render_book(\
+  input = 'index.Rmd', \
+  output_format = 'bookdown::gitbook', \
+  config_file = '_bookdown_final.yml')"
+
+# VOLUME wilke2020          # creates a folder /wilke2020
+# the next command copies the container folder to the volume 
+# but it cannot be seen in the host; it will show empty
+  # RUN cp -r _book_final /wilke2020/
+
+# -----------------------------------------------------------------------------
+# Copy selected files from image using Docker BuildKit
+# https://stackoverflow.com/a/58752370/5270873
+FROM scratch as release
+COPY --from=bookdown /home/rstudio/book/_book_final /public
+# -----------------------------------------------------------------------------
+FROM scratch as artifact
+COPY --from=bookdown /home/rstudio/book/_book_final /public
+# -----------------------------------------------------------------------------
+FROM release
+
+
+# Run from the host terminal
+# DOCKER_BUILDKIT=1 docker build --target artifact --output type=local,dest=./artifacts .</code></pre>
+
+</div>
+</div>
+  <div class="chapter-nav">
+<div class="prev"><a href="install-packages-from-source.html"><span class="header-section-number">7</span> Install packages from source</a></div>
+<div class="next"><a href="installing-packages-at-specific-dates.html"><span class="header-section-number">9</span> Installing packages at specific dates</a></div>
+</div></main><div class="col-md-3 col-lg-2 d-none d-md-block sidebar sidebar-chapter">
+    <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
+      <ul class="nav navbar-nav">
+<li><a class="nav-link" href="#copy-container-content-to-the-host"><span class="header-section-number">8</span> Copy container content to the host</a></li>
+<li><a class="nav-link" href="#building-the-image-from-a-dockerfile"><span class="header-section-number">8.1</span> Building the image from a Dockerfile</a></li>
+<li><a class="nav-link" href="#steps-to-build-the-image-in-stages"><span class="header-section-number">8.2</span> Steps to build the image in stages</a></li>
+<li><a class="nav-link" href="#the-dockerfile"><span class="header-section-number">8.3</span> The Dockerfile</a></li>
+</ul>
+
+      <div class="book-extra">
+        <ul class="list-unstyled">
+<li><a id="book-source" href="https://github.com/f0nzie//blob/master/13-copy_image_artifacts_to_host.Rmd">View source <i class="fab fa-github"></i></a></li>
+          <li><a id="book-edit" href="https://github.com/f0nzie//edit/master/13-copy_image_artifacts_to_host.Rmd">Edit this page <i class="fab fa-github"></i></a></li>
+        </ul>
+</div>
+    </nav>
+</div>
+
+</div>
+</div> <!-- .container -->
+
+<footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>"<strong>Minimal book Docker for R</strong>" was written by Yihui Xie. It was last built on 2020-11-20.</p>
+  </div>
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>This book was built by the <a class="text-light" href="https://bookdown.org">bookdown</a> R package.</p>
+  </div>
+
+</div></div>
+</footer>
+</body>
+</html>

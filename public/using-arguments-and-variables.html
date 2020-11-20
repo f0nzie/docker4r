@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Chapter 4 Using arguments and variables | Minimal book Docker for R</title>
+<meta name="author" content="Yihui Xie">
+<!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.2"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/header-attrs-2.5.3/header-attrs.js"></script><script src="libs/jquery-3.5.1/jquery-3.5.1.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="libs/bootstrap-4.5.3/bootstrap.min.css" rel="stylesheet">
+<script src="libs/bootstrap-4.5.3/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.2.2.9000/tabs.js"></script><script src="libs/bs3compat-0.2.2.9000/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
+<script src="libs/bs4_book-1.0.0/bs4_book.js"></script><script src="https://cdn.jsdelivr.net/autocomplete.js/0/autocomplete.jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/mark.min.js"></script><!-- CSS -->
+</head>
+<body data-spy="scroll" data-target="#toc">
+
+<div class="container-fluid">
+<div class="row">
+  <header class="col-sm-12 col-lg-3 sidebar sidebar-book"><a class="sr-only sr-only-focusable" href="#content">Skip to main content</a>
+
+    <div class="d-flex align-items-start justify-content-between">
+      <h1>
+        <a href="index.html" title="">Minimal book Docker for R</a>
+      </h1>
+      <button class="btn btn-outline-primary d-lg-none ml-2 mt-1" type="button" data-toggle="collapse" data-target="#main-nav" aria-expanded="true" aria-controls="main-nav"><i class="fas fa-bars"></i><span class="sr-only">Show table of contents</span></button>
+    </div>
+
+    <div id="main-nav" class="collapse-lg">
+      <form role="search">
+        <input id="search" class="form-control" type="search" placeholder="Search" aria-label="Search">
+</form>
+
+      <nav aria-label="Table of contents"><h2>Table of contents</h2>
+        <ul class="book-toc list-unstyled">
+<li><a class="" href="index.html"><span class="header-section-number">1</span> Preface</a></li>
+<li><a class="" href="intro.html"><span class="header-section-number">2</span> Introduction</a></li>
+<li><a class="" href="copying-files-and-folders.html"><span class="header-section-number">3</span> Copying files and folders</a></li>
+<li><a class="active" href="using-arguments-and-variables.html"><span class="header-section-number">4</span> Using arguments and variables</a></li>
+<li><a class="" href="using-rscript-and-littler.html"><span class="header-section-number">5</span> Using Rscript and littler</a></li>
+<li><a class="" href="building-a-book-as-a-package.html"><span class="header-section-number">6</span> Building a book as a package</a></li>
+<li><a class="" href="install-packages-from-source.html"><span class="header-section-number">7</span> Install packages from source</a></li>
+<li><a class="" href="copy-container-content-to-the-host.html"><span class="header-section-number">8</span> Copy container content to the host</a></li>
+<li><a class="" href="installing-packages-at-specific-dates.html"><span class="header-section-number">9</span> Installing packages at specific dates</a></li>
+<li><a class="" href="dockerfile-and-makefile.html"><span class="header-section-number">10</span> Dockerfile and Makefile</a></li>
+<li><a class="" href="editing-tips.html"><span class="header-section-number">11</span> Editing tips</a></li>
+<li><a class="" href="references.html">References</a></li>
+</ul>
+
+        <div class="book-extra">
+          <p><a id="book-repo" href="https://github.com/f0nzie/">View book source <i class="fab fa-github"></i></a></p>
+        </div>
+      </nav>
+</div>
+  </header><main class="col-sm-12 col-md-9 col-lg-7" id="content"><div id="using-arguments-and-variables" class="section level1" number="4">
+<h1>
+<span class="header-section-number">4</span> Using arguments and variables<a class="anchor" aria-label="anchor" href="#using-arguments-and-variables"><i class="fas fa-link"></i></a>
+</h1>
+<div id="passing-an-argument" class="section level2" number="4.1">
+<h2>
+<span class="header-section-number">4.1</span> Passing an argument<a class="anchor" aria-label="anchor" href="#passing-an-argument"><i class="fas fa-link"></i></a>
+</h2>
+<div id="r_version" class="section level3" number="4.1.1">
+<h3>
+<span class="header-section-number">4.1.1</span> R_VERSION<a class="anchor" aria-label="anchor" href="#r_version"><i class="fas fa-link"></i></a>
+</h3>
+<p>If we want to pass a version of R to install we could specify it by adding an argument, let’s say <code>R_VERSION</code>, and then convert it to an environment variable with the same name that extracts the values provided by the user through the argument, or a default value provided after the colon <code><a href="https://rdrr.io/r/base/Colon.html">:</a></code>.</p>
+<p><strong>Example</strong>: The argument is <code>R_VERSION</code> which is supplied by the user. Then the same name is used as an environment variable to pick the version entered by the user, or the default value <code>-3.5.3</code> if nothing is provided through the argument.</p>
+<pre><code>ARG R_VERSION
+ENV R_VERSION=${R_VERSION:-3.5.3}</code></pre>
+<p>This variable can be later used in the Dockerfile. An example could be downloading and installing an R version from source code.</p>
+<pre><code>RUN curl -O https://cran.r-project.org/src/base/R-3/R-${R_VERSION}.tar.gz</code></pre>
+</div>
+<div id="build_date" class="section level3" number="4.1.2">
+<h3>
+<span class="header-section-number">4.1.2</span> BUILD_DATE<a class="anchor" aria-label="anchor" href="#build_date"><i class="fas fa-link"></i></a>
+</h3>
+<p><strong>Example</strong>: Similarly, with the build date for packages can be entered as an argument <code>BUILD_DATE</code>. And, again, if empty, a default value of <code>2019-0426</code> is assigned to the environment variable of the same name.</p>
+<pre><code>ARG BUILD_DATE
+ENV BUILD_DATE ${BUILD_DATE:-2019-04-26}</code></pre>
+<p>A typical use of the build date is installing packages from MRAN at a certain point in time.</p>
+<p><strong>Example</strong>: To set MRAN to download the packages <code>shiny</code> and <code>markdown</code> at a certain data, use:</p>
+<pre><code>RUN MRAN=https://mran.microsoft.com/snapshot/${BUILD_DATE} \
+    R -e "install.packages(c('shiny', 'rmarkdown'), repos='$MRAN')"</code></pre>
+</div>
+<div id="rstudio_version" class="section level3" number="4.1.3">
+<h3>
+<span class="header-section-number">4.1.3</span> RSTUDIO_VERSION<a class="anchor" aria-label="anchor" href="#rstudio_version"><i class="fas fa-link"></i></a>
+</h3>
+<p><strong>Example</strong>: The following script will build an URL with the download link to the RStudio<code>.deb</code> file. If the value of the environment variable <code>RSTUDIO_VERSION</code> is empty, a check done with <code>if [ -z "$RSTUDIO_VERSION" ]</code>, then the latest version is installed. If the RStudio version is provided, then URL will take the value in the environment variable inserting the string <code>${RSTUDIO_VERSION}</code>.</p>
+<pre><code>ARG RSTUDIO_VERSION
+ENV RSTUDIO_VERSION=${RSTUDIO_VERSION:-1.2.5019}
+
+RUN if [ -z "$RSTUDIO_VERSION" ]; then RSTUDIO_URL="https://www.rstudio.org/download/latest/stable/server/debian9_64/rstudio-server-latest-amd64.deb"; else RSTUDIO_URL="http://download2.rstudio.org/server/debian9/x86_64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb"; fi \
+&amp;&amp; wget -q $RSTUDIO_URL \
+&amp;&amp; dpkg -i rstudio-server-*-amd64.deb</code></pre>
+
+</div>
+</div>
+</div>
+  <div class="chapter-nav">
+<div class="prev"><a href="copying-files-and-folders.html"><span class="header-section-number">3</span> Copying files and folders</a></div>
+<div class="next"><a href="using-rscript-and-littler.html"><span class="header-section-number">5</span> Using Rscript and littler</a></div>
+</div></main><div class="col-md-3 col-lg-2 d-none d-md-block sidebar sidebar-chapter">
+    <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
+      <ul class="nav navbar-nav">
+<li><a class="nav-link" href="#using-arguments-and-variables"><span class="header-section-number">4</span> Using arguments and variables</a></li>
+<li>
+<a class="nav-link" href="#passing-an-argument"><span class="header-section-number">4.1</span> Passing an argument</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#r_version"><span class="header-section-number">4.1.1</span> R_VERSION</a></li>
+<li><a class="nav-link" href="#build_date"><span class="header-section-number">4.1.2</span> BUILD_DATE</a></li>
+<li><a class="nav-link" href="#rstudio_version"><span class="header-section-number">4.1.3</span> RSTUDIO_VERSION</a></li>
+</ul>
+</li>
+</ul>
+
+      <div class="book-extra">
+        <ul class="list-unstyled">
+<li><a id="book-source" href="https://github.com/f0nzie//blob/master/08-arguments_variables.Rmd">View source <i class="fab fa-github"></i></a></li>
+          <li><a id="book-edit" href="https://github.com/f0nzie//edit/master/08-arguments_variables.Rmd">Edit this page <i class="fab fa-github"></i></a></li>
+        </ul>
+</div>
+    </nav>
+</div>
+
+</div>
+</div> <!-- .container -->
+
+<footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>"<strong>Minimal book Docker for R</strong>" was written by Yihui Xie. It was last built on 2020-11-20.</p>
+  </div>
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>This book was built by the <a class="text-light" href="https://bookdown.org">bookdown</a> R package.</p>
+  </div>
+
+</div></div>
+</footer>
+</body>
+</html>

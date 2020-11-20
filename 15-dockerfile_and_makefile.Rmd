@@ -1,0 +1,12 @@
+# Dockerfile and Makefile
+
+
+## Running make from a Dockerfile
+
+```
+# make -j 4: allow 4 jobs
+RUN . /etc/environment \
+    && cd /analysis              `# change to folder` \
+    && make clean                `# delete all files` \ 
+    && make -j 4                 `# allow 4 jobs`
+```    

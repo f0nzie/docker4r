@@ -1,0 +1,135 @@
+# Building a book as a package
+
+## Introduction
+The advantage of building a book as a package is that all the packages mentioned in `Imports` of the `DESCRIPTION` file get installed before the book building operation commences. This is ideal feature when we want to automate the book building from *Docker* or from *Travis*.
+
+
+There are two key parts to achieve this:
+
+* Write a dummy DESCRIPTION file with all the dependencies spelled out
+* Copy the DESCRIPTION file to the image
+* Install the packages under the `Imports` file in `DESCRIPTION`
+
+
+## Building the `edav` book
+
+### Steps
+The first step is writing the DESCRIPTION file. It will look like this:
+
+```
+Package: edav.pkg
+Type: Package
+Title: What the package does (short line)
+Version: 0.1
+Date: 2019-08-27
+Author: msfz751
+Maintainer: Who to complain to <yourfault@somewhere.net>
+Description: More about what it does (maybe more than one line)
+License: What license is it under?
+Imports: logging,
+  Matrix,
+  dplyr,
+  ggplot2,
+  gridExtra,
+  MASS,
+  tidyr,
+  tidyverse,
+  scales,
+  knitr,
+  mi,
+  AER,
+  leaflet,
+  htmltools,
+  leaflet.extras,
+  viridis,
+  fpp,
+  imputeTS,
+  GGally,
+  datasets,
+  lubridate,
+  likert,
+  GDAdata,
+  lattice,
+  Sleuth3,
+  ggsci,
+  ggthemes,
+  vcd,
+  grid,
+  vcdExtra,
+  ggmosaic,
+  pgmm,
+  ggridges,
+  cluster,
+  tidyquant,
+  choroplethr,
+  jsonlite,
+  RCurl,
+  odbc,
+  DBI,
+  visNetwork,
+  ggplot2movies,
+  choroplethrMaps,
+  forecast,
+  TSP
+```
+
+Then, in the Dockerfile we copy DESCRIPTION to our home folder:
+
+    COPY DESCRIPTION /home/rstudio/edav/
+
+This will copy a dummy `DESCRIPTION` file to the image.
+
+Then, the `devtools::install` function that proceeds to install the packages in the image:
+
+
+    # install packages using DESCRIPTION file
+    RUN R -e "devtools::install(\
+        '/home/rstudio/edav', \
+        keep_source=TRUE, \
+        args='--install-tests', \
+        dependencies=TRUE)"
+
+### Dockerfile
+
+    # Dockerfile for the book "edav*
+    # BUILD_DATE for R-3.6.3 is 2020-04-24
+    # FROM rocker/verse:3.6.3
+    FROM f0nzie/gitbook:3.6.3
+
+    RUN . /etc/environment \
+        && mkdir /home/rstudio/edav
+
+    COPY DESCRIPTION /home/rstudio/edav/
+
+    # install packages using DESCRIPTION file
+    RUN R -e "devtools::install(\
+        '/home/rstudio/edav', \
+        keep_source=TRUE, \
+        args='--install-tests', \
+        dependencies=TRUE)"
+
+    # copy package sources
+    COPY pkg/extracat /home/rstudio/pkg/extracat
+    COPY pkg/ggthemr /home/rstudio/pkg/ggthemr
+    COPY pkg/statebins /home/rstudio/pkg/statebins
+
+    # install from package sources
+    RUN Rscript -e "install.packages(c(\
+      '/home/rstudio/pkg/extracat', \
+      '/home/rstudio/pkg/ggthemr', \
+      '/home/rstudio/pkg/statebins' \
+      ), repos = NULL, type='source')"
+
+
+    COPY book /home/rstudio/edav/book/
+    WORKDIR /home/rstudio/edav/book
+    RUN Rscript -e 'bookdown::render_book("index.Rmd", "bookdown::gitbook")'
+
+    # change owner:group to current user
+    RUN chown -R 1001:1001 public
+    COPY copy_gitbook.sh /home/rstudio/edav
+
+
+    # execute script `copy_gitbook.sh` from the host:
+    #   docker run --rm -v $PWD/share:/home/rstudio/share edav ../copy_gitbook.sh
+    # which will copy the book output folder `public` to the host `share` folder

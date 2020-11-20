@@ -1,0 +1,43 @@
+# Install packages from source
+
+We occasionally need to copy package sources that are not available anymore, or freeze packages in time to reproduce a document; or eliminate potential conflicts between packages.
+
+**Example**: This first block copies the packages as source files:
+
+    # copy package sources
+    COPY pkg/extracat /home/rstudio/pkg/extracat
+    COPY pkg/ggthemr /home/rstudio/pkg/ggthemr
+    COPY pkg/statebins /home/rstudio/pkg/statebins
+
+And this next block proceeds to install the packages:
+
+    # install from package sources
+    RUN Rscript -e "install.packages(c(\
+      '/home/rstudio/pkg/extracat', \
+      '/home/rstudio/pkg/ggthemr', \
+      '/home/rstudio/pkg/statebins' \
+      ), repos = NULL, type='source')"
+
+We use the function `install.packages()`, indicating `type='source'`.
+
+
+
+
+
+## Install system packages
+
+The Linux package `QuantLib` is relatively hard to install using `apt install`. If that method doesn't work, we could install it from source.
+
+**Example**: This script will download the `QuantLib` Linux package source, unpack it, change to the source folder,   then check the configuration, and install it with `make`.
+
+```
+WORKDIR /home/shiny
+RUN wget https://github.com/lballabio/QuantLib/releases/download/QuantLib-v1.19/QuantLib-1.19.tar.gz && \
+    tar xzf QuantLib-1.19.tar.gz && \
+    cd QuantLib-1.19 
+    ./configure && \
+    make
+```
+
+
+

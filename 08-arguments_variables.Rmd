@@ -1,0 +1,58 @@
+# Using arguments and variables
+
+## Passing an argument
+
+### R_VERSION
+
+If we want to pass a version of R to install we could specify it by adding an argument, let's say `R_VERSION`, and then convert it to an environment variable with the same name that extracts the values provided by the user through the argument, or a default value provided after the colon `:`. 
+
+**Example**: The argument is `R_VERSION` which is supplied by the user. Then the same name is used as an environment variable to pick the version entered by the user, or the default value `-3.5.3` if nothing is provided through the argument.
+
+```
+ARG R_VERSION
+ENV R_VERSION=${R_VERSION:-3.5.3}
+```
+
+This variable can be later used in the Dockerfile. An example could be downloading and installing an R version from source code.
+
+```
+RUN curl -O https://cran.r-project.org/src/base/R-3/R-${R_VERSION}.tar.gz
+```
+
+
+
+### BUILD_DATE
+
+**Example**: Similarly, with the build date for packages can be entered as an argument `BUILD_DATE`. And, again, if empty, a default value of `2019-0426` is assigned to the environment variable of the same name.
+
+```
+ARG BUILD_DATE
+ENV BUILD_DATE ${BUILD_DATE:-2019-04-26}
+```
+
+A typical use of the build date is installing packages from MRAN at a certain point in time.
+
+**Example**: To set MRAN to download the packages `shiny` and `markdown` at a certain data, use:
+
+```
+RUN MRAN=https://mran.microsoft.com/snapshot/${BUILD_DATE} \
+    R -e "install.packages(c('shiny', 'rmarkdown'), repos='$MRAN')"
+```
+
+
+
+### RSTUDIO_VERSION
+
+
+
+**Example**: The following script will build an URL with the download link to the RStudio`.deb` file. If the value of the environment variable `RSTUDIO_VERSION` is empty, a check done with `if [ -z "$RSTUDIO_VERSION" ]`, then the latest version is installed. If the RStudio version is provided, then URL will take the value in the environment variable inserting the string `${RSTUDIO_VERSION}`.
+
+```
+ARG RSTUDIO_VERSION
+ENV RSTUDIO_VERSION=${RSTUDIO_VERSION:-1.2.5019}
+
+RUN if [ -z "$RSTUDIO_VERSION" ]; then RSTUDIO_URL="https://www.rstudio.org/download/latest/stable/server/debian9_64/rstudio-server-latest-amd64.deb"; else RSTUDIO_URL="http://download2.rstudio.org/server/debian9/x86_64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb"; fi \
+&& wget -q $RSTUDIO_URL \
+&& dpkg -i rstudio-server-*-amd64.deb
+```
+

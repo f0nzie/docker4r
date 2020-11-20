@@ -1,0 +1,19 @@
+# Editing tips
+
+## Break lines in a Rscript long command
+If we need to break a long `Rscript` command, we break the lines with a single backslash or `\`. 
+
+1. No spaces after the slash
+1. Enclose the command in double quotes
+
+
+
+```
+RUN Rscript -e "bookdown::render_book(\
+    input = 'index.Rmd', \
+    output_format = 'bookdown::gitbook', \
+    config_file = '_bookdown_final.yml')"
+```    
+
+This examples was extracted from the book `clauswilke.dataviz.2018`.
+

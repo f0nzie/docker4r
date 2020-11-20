@@ -1,0 +1,93 @@
+---
+typora-copy-images-to: ./images
+---
+
+# Copying files and folders
+
+## Copy a package tar.gz file
+
+It is important to end the destination folder in the image with a slash. Like this: `/home/rstudio/pkg/`.
+
+
+```
+# install a package from source
+COPY pkg/sbrl_1.2.tar.gz /home/rstudio/pkg/
+RUN R CMD INSTALL /home/rstudio/pkg/sbrl_1.2.tar.gz
+```
+
+
+## Copy the current folder
+
+```
+## Copy the current directory to /analysis
+COPY . /analysis
+```
+
+## Copying folders
+
+Copy two folders to an image:
+
+```
+## Copy your working files over
+## The $USER defaults to `rstudio` but you can change this at runtime
+COPY ./Analysis /home/$USER/Analysis
+COPY ./Data /home/$USER/Data
+```
+
+
+## Copy an R script to an image
+
+
+```
+## Copy requirements.R to container directory /tmp
+COPY ./DockerConfig/requirements.R /tmp/requirements.R 
+## install required libs on container
+RUN Rscript /tmp/requirements.R
+```
+
+## Copy a folder from a stage image
+
+
+```
+# copy conky that was built from source
+COPY --from=builder /opt/conky /opt/conky
+```
+
+
+## Copy folder using the stage number instead of the name
+
+```
+# source: https://github.com/bcicen/ctop
+
+FROM quay.io/vektorcloud/go:1.12
+
+RUN apk add --no-cache make
+
+WORKDIR /app
+COPY go.mod .
+RUN go mod download
+
+COPY . .
+RUN make build && \
+    mkdir -p /go/bin && \
+    mv -v ctop /go/bin/
+
+FROM scratch
+ENV TERM=linux
+
+COPY --from=0 /go/bin/ctop /ctop
+ENTRYPOINT ["/ctop"]
+```
+
+
+## Using ADD
+`ADD` is another way to copy files but it is not recommended.
+Example:
+
+```
+FROM debian:testing
+ADD tools/rootfs.tar.xz /
+```
+
+It will copy the folder `tools` in the host to the root folder in the container.
+

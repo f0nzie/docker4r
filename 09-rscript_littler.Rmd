@@ -1,0 +1,59 @@
+# Using Rscript and littler
+
+
+## Install packages with `littler`
+
+```
+RUN install2.r --error \
+	--repo https://cran.rstudio.com/  \
+    haven \
+    tibble \
+    xml2 
+```
+
+Its equivalent with `Rscript`:
+
+```
+RUN Rscript -e "install.packages(c(\
+  'haven', \
+  'tibble', \
+  'xml2', \
+  ), repos='https://cran.rstudio.com/')"
+```
+
+
+
+
+
+## Install dependencies with `install2.r`
+
+
+
+```
+RUN install2.r --error \
+    --deps TRUE \
+    pks \
+    pander \
+    forecast
+```
+
+
+
+**Example**: We want to install Java first and then the R packages that depend on Java
+
+```
+# -------------------------  SECTION Install Java -----------------
+# Install Java
+# extracted from  rocker-versioned/verse/3.5.3.Dockerfile 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ## for rJava
+    default-jdk \
+    ## used to build rJava and other packages
+    libbz2-dev \
+    libicu-dev \
+    liblzma-dev \
+    && install2.r --error --deps TRUE \
+    bookdown rticles rmdshower rJava RWeka
+```
+

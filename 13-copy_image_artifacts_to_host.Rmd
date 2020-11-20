@@ -1,0 +1,182 @@
+# Copy container content to the host
+
+We use this technique to copy a folder or files from a container without an explicit copy operation, or the need of spin up a container from an image.
+
+What we do is using an obscure development feature in Docker called `BuildKit`. This allows us to copy a set of files directly when we are building the image. The image from which the files are extracted has to be created in stages; one of the images will contain the files to copy to the host.
+
+## Building the image  from a Dockerfile
+
+We have this example from a Dockerfile that is used to copy files from a stage image called `artifact` to a folder in the host that we call `artifacts.` The names are similar to mean a certian connection between the target image and the output folder in the host.
+
+    # Dockerfile rule
+    phony: artifact
+    artifact:
+        DOCKER_BUILDKIT=1 docker build --target artifact --output type=local,dest=./artifacts .
+
+## Steps to build the image in stages
+
+In the following `Dockerfile` we see the creation of stages. We need these stages to place the files we need to copy later to the host. The trick consists of copying the set of files from a stage image -where the files have already been generated- to a destination image, which will contain these files.
+
+The key lines in the script are:
+
+    FROM scratch as release
+    COPY --from=bookdown /home/rstudio/book/_book_final /public
+    FROM scratch as artifact
+    COPY --from=bookdown /home/rstudio/book/_book_final /public
+    FROM release
+
+## The Dockerfile
+
+The following is the Dockerfile script that builds the intermediate images and the final image `artifact`, from which we will extract the files. To prevent copying a large amount of files from the images we are building, we finish the script with the `release` image, which would contain another copy of the selected files, and nothing more.
+
+    # BUILD_DATE for R-3.6.3 is 2020-04-24
+    # BUILD_DATE for R-3.5.3 is 2019-04-26
+    # FROM rocker/rstudio:3.5.3
+
+    # -----------------------------------------------------------------------------
+    FROM rocker/rstudio:3.6.3 as linux
+    # FROM rocker/verse:3.6.3
+
+    RUN apt-get -y update \
+     && apt-get -y install  \
+        libxml2-dev \
+        libz-dev
+
+    # Linux: pre-requisites gor GDAL, rgdal, rgeos and units
+    # Linux: pre-requisites for magick
+    RUN apt-get install -y \
+        libudunits2-dev \
+        libgdal20 \
+        libgdal-dev \
+        libgeos-dev \ 
+        libproj-dev \
+        libmagick++-dev \
+        cargo                # required by gifski
+
+    # -----------------------------------------------------------------------------
+    FROM linux as rstats
+    # Install R packages
+    RUN install2.r --error --repo https://mran.microsoft.com/snapshot/2019-06-12 \
+        bookdown \
+        egg \
+        forcats \
+        foreign \
+        gapminder \
+        ggrepel \
+        ggridges \
+        ggthemes \
+        ggforce \
+        gridGraphics \
+        ggplot2movies \
+        gridExtra \
+        gtable \ 
+        hexbin \
+        lubridate \
+        magick \
+        maps \
+        maptools \
+        nlme \
+        nycflights13 \ 
+        plot3D \
+        rgdal \
+        rgeos \
+        readr \
+        sf \
+        treemapify \
+        tidyverse \
+        units
+
+    # mvtnorm required by ungeviz
+    # rstanarm required by dviz.supp
+    # install statebins from source 
+    RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-06-12 \  
+      emmeans \
+      ggmap \
+      geofacet \
+      ggspatial \
+      gganimate \
+      lwgeom \
+      mvtnorm \
+      rworldmap \
+      transformr
+
+    RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-08-12 \  
+      rstanarm
+
+    RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-12 \  
+      dplyr \
+      lobstr \
+      lifecycle \
+      patchwork \
+      tidybayes \
+      tidyr  
+
+    # RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-12 \  
+    #   patchwork \
+    #   tidybayes  
+
+    # RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-12 \  
+    #   dplyr \
+    #   tidyr
+
+    # -----------------------------------------------------------------------------
+    FROM rstats as offline
+    RUN install2.r --error  --repo https://mran.microsoft.com/snapshot/2019-12-24 \  
+      gifski
+
+    COPY pkg/colorspace /home/rstudio/pkg/colorspace
+    COPY pkg/strapgod /home/rstudio/pkg/strapgod
+    COPY pkg/ungeviz /home/rstudio/pkg/ungeviz
+    COPY pkg/cowplot /home/rstudio/pkg/cowplot
+    COPY pkg/colorblindr /home/rstudio/pkg/colorblindr
+    COPY pkg/dviz.supp /home/rstudio/pkg/dviz.supp
+    COPY pkg/ggtextures /home/rstudio/pkg/ggtextures
+    COPY pkg/statebins /home/rstudio/pkg/statebins
+
+    RUN Rscript -e "install.packages(c(\
+      '/home/rstudio/pkg/colorspace', \
+      '/home/rstudio/pkg/strapgod', \
+      '/home/rstudio/pkg/ungeviz', \
+      '/home/rstudio/pkg/cowplot', \
+      '/home/rstudio/pkg/colorblindr', \
+      '/home/rstudio/pkg/dviz.supp', \
+      '/home/rstudio/pkg/ggtextures', \
+      '/home/rstudio/pkg/statebins' \
+      ), repos = NULL, type='source')"
+
+    # RUN Rscript -e "install.packages(c(\
+    # '/home/rstudio/pkg/ungeviz' \
+    # ), repos = NULL, type='source')"
+
+    # -----------------------------------------------------------------------------
+    FROM offline as bookdown
+    COPY dataviz-2020 /home/rstudio/book
+    RUN chmod a+rwx -R /home/rstudio/book
+    WORKDIR /home/rstudio/book
+    # VOLUME write-fast         # creates a folder /write-fast
+
+    # build book
+    RUN Rscript -e "bookdown::render_book(\
+      input = 'index.Rmd', \
+      output_format = 'bookdown::gitbook', \
+      config_file = '_bookdown_final.yml')"
+
+    # VOLUME wilke2020          # creates a folder /wilke2020
+    # the next command copies the container folder to the volume 
+    # but it cannot be seen in the host; it will show empty
+      # RUN cp -r _book_final /wilke2020/
+
+    # -----------------------------------------------------------------------------
+    # Copy selected files from image using Docker BuildKit
+    # https://stackoverflow.com/a/58752370/5270873
+    FROM scratch as release
+    COPY --from=bookdown /home/rstudio/book/_book_final /public
+    # -----------------------------------------------------------------------------
+    FROM scratch as artifact
+    COPY --from=bookdown /home/rstudio/book/_book_final /public
+    # -----------------------------------------------------------------------------
+    FROM release
+
+
+    # Run from the host terminal
+    # DOCKER_BUILDKIT=1 docker build --target artifact --output type=local,dest=./artifacts .

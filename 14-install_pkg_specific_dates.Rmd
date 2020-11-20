@@ -1,0 +1,23 @@
+# Installing packages at specific dates
+
+Here we have an example where we need to install three packages at different dates for reasons of reproducibility. Dates before or after cause an error because of changes in some of the functions.
+
+
+```
+# Error: packages ‘systemfonts’, ‘lifecycle’ are not available (for R version 3.6.3)
+# also fails in travis
+# systemfonts will not be available for 3.6.3 until 2019-06-29
+RUN install2.r --error --repo https://mran.microsoft.com/snapshot/2019-06-29 \
+    systemfonts
+
+# lifecycle will install after 2019-08-02
+# Error: package ‘lifecycle’ is not available (for R version 3.6.3)
+RUN install2.r --error --repo https://mran.microsoft.com/snapshot/2019-08-02 \
+    lifecycle
+
+# "farver" is dependency of "scales"
+# older versions of farver crash book building at 02.Rmd
+# Error in farver:decode_color() unused argument
+RUN install2.r --error --repo https://mran.microsoft.com/snapshot/2020-03-12 \
+    farver    
+```
