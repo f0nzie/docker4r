@@ -4,7 +4,7 @@ bookdown::bs4_book:
     primary: "#982a31"
     fg: "#2b2121"
     bg: "#ffffff"
-  repo: https://github.com/f0nzie/
+  repo: https://github.com/f0nzie/docker4r
 
 bookdown::gitbook:
   css: style.css
