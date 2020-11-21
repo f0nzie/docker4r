@@ -21,8 +21,6 @@ endif
 
 
 
-
-
 open_book:
 ifeq ($(OSFLAG), OSX)
     @open -a firefox  $(PUBLISH_DIR)/index.html
@@ -33,6 +31,14 @@ endif
 ifeq ($(OSFLAG), WINDOWS)
 	@"C:\Program Files\Mozilla Firefox\firefox" $(PUBLISH_DIR)/index.html
 endif
+
+
+bs4book_render:
+	export RSTUDIO_PANDOC="/usr/lib/rstudio/bin/pandoc";\
+	Rscript -e 'bookdown::render_book("index.Rmd", "bookdown::bs4_book")'
+
+
+bs4_book: bs4book_render open_book
 
 
 
